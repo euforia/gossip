@@ -2,6 +2,7 @@ package gossip
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -25,6 +26,8 @@ func testMemlistConf() *memberlist.Config {
 func testConf(host string, port int) *Config {
 	conf := DefaultConfig()
 	conf.Name = fmt.Sprintf("node%d", port)
+	conf.AdvertiseAddr = host
+	conf.AdvertisePort = port
 	conf.BindAddr = host
 	conf.BindPort = port
 	return conf
@@ -65,9 +68,22 @@ func makeNetwork(start, c int) ([]*Gossip, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		p = out[i].GetPool(2)
+		_, err = p.Join([]string{bs})
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	return out, nil
+}
+
+type testHTTPServer struct{}
+
+func (s *testHTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("test"))
 }
 
 func Test_Gossip(t *testing.T) {
@@ -76,6 +92,14 @@ func Test_Gossip(t *testing.T) {
 		t.Fatal(err)
 	}
 	<-time.After(1500 * time.Millisecond)
+
+	// Check pool
+	for _, g := range gnet {
+		assert.Equal(t, 2, len(g.ListPools()))
+		for _, gp := range g.pools {
+			assert.NotNil(t, gp)
+		}
+	}
 
 	poolMems := make([]*Pool, len(gnet))
 	for i, g := range gnet {
@@ -93,10 +117,23 @@ func Test_Gossip(t *testing.T) {
 	local := poolMems[0].peers.Local()
 	assert.NotNil(t, local.Coordinate)
 
-	<-time.After(3500 * time.Millisecond)
+	<-time.After(2000 * time.Millisecond)
 
 	peers := poolMems[0].peers.List()
 	for _, p := range peers[1:] {
 		t.Log(peers[0].Coordinate.DistanceTo(p.Coordinate))
 	}
+
+	ln := gnet[1].Listener()
+	hs := &testHTTPServer{}
+	go http.Serve(ln, hs)
+
+	resp, err := http.Get("http://127.0.0.1:54321/local")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode > 399 {
+		t.Fatal("http request failed")
+	}
+
 }

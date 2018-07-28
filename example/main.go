@@ -25,6 +25,8 @@ func makeConfig() *gossip.Config {
 	}
 
 	conf := gossip.DefaultConfig()
+	conf.AdvertiseAddr = host
+	conf.AdvertisePort = port
 	conf.BindAddr = host
 	conf.BindPort = port
 	conf.Name = *advAddr
@@ -45,7 +47,7 @@ func main() {
 	}
 
 	// Register a new gossip pool.  You can register as many as 254
-	pool := gsp.RegisterPool(gossip.DefaultLANPoolConfig(1))
+	pool1 := gsp.RegisterPool(gossip.DefaultLANPoolConfig(1))
 
 	err = gsp.Start()
 	if err != nil {
@@ -55,14 +57,14 @@ func main() {
 	// Join a pool
 	if len(*joinPeers) > 0 {
 		peers := strings.Split(*joinPeers, ",")
-		_, err = pool.Join(peers)
+		_, err = pool1.Join(peers)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	// Application http handler
-	hs := &httpServer{peers: pool.Peers()}
+	hs := &httpServer{peers: pool1.Peers()}
 	if err = http.Serve(gsp.Listener(), hs); err != nil {
 		log.Fatal(err)
 	}

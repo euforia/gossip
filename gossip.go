@@ -42,13 +42,14 @@ func New(conf *Config) (*Gossip, error) {
 
 	g := &Gossip{
 		name:    conf.Name,
-		advAddr: conf.BindAddr,
-		advPort: conf.BindPort,
+		advAddr: conf.AdvertiseAddr,
+		advPort: conf.AdvertisePort,
 		pools:   make(map[int32]*Pool, 1),
 		log:     conf.Logger,
 		debug:   conf.Debug,
 	}
 
+	// TODO: Change to use bind address
 	transConf := &transport.Config{
 		BindAddrs: []string{conf.BindAddr},
 		BindPort:  conf.BindPort,
@@ -78,7 +79,7 @@ func (g *Gossip) GetPool(id int32) *Pool {
 
 // ListPools returns a slice of int32 pool ids
 func (g *Gossip) ListPools() []int32 {
-	out := make([]int32, len(g.pools))
+	out := make([]int32, 0, len(g.pools))
 	for k := range g.pools {
 		out = append(out, k)
 	}
@@ -88,6 +89,10 @@ func (g *Gossip) ListPools() []int32 {
 // RegisterPool registers ie. creates a new pool with the given config.  All pools must be
 // registered before gossip is started as the addition of pools is not thread safe
 func (g *Gossip) RegisterPool(pconf *PoolConfig) *Pool {
+	if pconf.ID < 1 {
+		panic("pool id must be greate than 0")
+	}
+
 	pconf.Vivaldi = g.coord
 	pconf.Memberlist.Transport = g.trans.RegisterPool(uint8(pconf.ID))
 	pconf.Memberlist.Name = g.name

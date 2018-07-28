@@ -34,13 +34,15 @@ func (conf *PoolConfig) Validate() {
 
 // Config holds the config instantiate a Gossip instance
 type Config struct {
-	Name       string
-	BindAddr   string
-	BindPort   int
-	PublicKey  []byte // Public key for the node
-	Coordinate *vivaldi.Config
-	Logger     *log.Logger
-	Debug      bool // Turn on debug
+	Name          string
+	AdvertiseAddr string
+	AdvertisePort int
+	BindAddr      string
+	BindPort      int
+	PublicKey     []byte // Public key for the node
+	Coordinate    *vivaldi.Config
+	Logger        *log.Logger
+	Debug         bool // Turn on debug
 }
 
 // Validate validates thte config
@@ -51,6 +53,7 @@ func (conf *Config) Validate() {
 // DefaultConfig returns a default config to instantiate a Gossip instance
 func DefaultConfig() *Config {
 	return &Config{
+		BindAddr:   "0.0.0.0",
 		Coordinate: vivaldi.DefaultConfig(),
 		Logger:     log.NewDefaultLogger(),
 	}
