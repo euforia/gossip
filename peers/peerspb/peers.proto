@@ -14,5 +14,6 @@ message Peer {
     bytes  PublicKey              = 4;
     bool   Offline                = 5;
     int64  LastSeen               = 6;
-    vivaldi.Coordinate Coordinate = 7;
+    uint64 Heartbeats             = 7;
+    vivaldi.Coordinate Coordinate = 8;
 }

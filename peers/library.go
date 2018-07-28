@@ -12,7 +12,7 @@ import (
 	"github.com/euforia/gossip/peers/peerspb"
 )
 
-// Peer holds the peer hard-state as well as soft-state
+// Peer holds the peer soft-state
 type Peer struct {
 	*peerspb.Peer
 	Distance time.Duration
@@ -35,7 +35,7 @@ type Library interface {
 	// Set the local peer
 	SetLocal(peer *peerspb.Peer)
 	// Return the local peer
-	Local() *peerspb.Peer
+	Local() *Peer
 	// Mark the peer as being offline
 	Offline(addr string) (*peerspb.Peer, bool)
 	// Returns number of peers in the library including local
@@ -65,11 +65,11 @@ func (pl *InmemLibrary) SetLocal(peer *peerspb.Peer) {
 }
 
 // Local returns the local peer
-func (pl *InmemLibrary) Local() *peerspb.Peer {
+func (pl *InmemLibrary) Local() *Peer {
 	pl.mu.RLock()
 	defer pl.mu.RUnlock()
 
-	return pl.m[0].Peer
+	return pl.m[0]
 }
 
 // Add adds the peers to the store by PublicKey.
@@ -125,11 +125,15 @@ func (pl *InmemLibrary) Update(peers ...*peerspb.Peer) int {
 		}
 
 		// Carry over the previous distance.  We will compute it later
-		distance := pl.m[i].Distance
-		pl.m[i] = &Peer{Peer: peer, Distance: distance}
+		p := pl.m[i]
+		pl.m[i] = &Peer{
+			Peer:     peer,
+			Distance: p.Distance,
+		}
+
+		pl.m[i].Heartbeats = p.Heartbeats + 1
 		pl.m[i].LastSeen = time.Now().UnixNano()
 		c++
-
 	}
 
 	pl.computeDistance()
