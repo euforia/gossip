@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 	"net"
@@ -51,9 +52,12 @@ type NetTransport struct {
 	// Gossip pools
 	pools map[uint8]*poolTransport
 
-	// Non-memberlist UDP packets
+	// Additional muxed conns
+	muxed map[uint16]chan net.Conn
+
+	// Non-memberlist/magic UDP packets
 	udpCh chan *memberlist.Packet
-	// Non-memberlist TCP connections
+	// Non-memberlist/magic TCP connections
 	tcpCh chan net.Conn
 
 	logger       *log.Logger
@@ -76,6 +80,7 @@ func NewNetTransport(config *Config) (*NetTransport, error) {
 	t := NetTransport{
 		config: config,
 		pools:  make(map[uint8]*poolTransport, 1),
+		muxed:  make(map[uint16]chan net.Conn),
 		udpCh:  make(chan *memberlist.Packet),
 		tcpCh:  make(chan net.Conn),
 		logger: config.Logger,
@@ -114,6 +119,16 @@ func (t *NetTransport) RegisterPool(id uint8) memberlist.Transport {
 	ptrans := newPoolTransport(id, t)
 	t.pools[id] = ptrans
 	return ptrans
+}
+
+// RegisterListener registers a new listener to be muxed
+func (t *NetTransport) RegisterListener(id uint16) (<-chan net.Conn, error) {
+	if _, ok := t.muxed[id]; ok {
+		return nil, fmt.Errorf("listener id taken: %d", id)
+	}
+	ch := make(chan net.Conn)
+	t.muxed[id] = ch
+	return ch, nil
 }
 
 func (t *NetTransport) initListeners(config *Config) error {
@@ -308,8 +323,14 @@ func (t *NetTransport) tcpListen(tcpLn *net.TCPListener) {
 			pool.memlistCh <- conn
 
 		default:
-			// No magic
-			t.tcpCh <- &defaultNoMuxConn{first2: magic, Conn: conn}
+			// User defined mux
+			mgc := binary.BigEndian.Uint16(magic)
+			if ch, ok := t.muxed[mgc]; ok {
+				ch <- conn
+			} else {
+				// No magic
+				t.tcpCh <- &defaultNoMuxConn{first2: magic, Conn: conn}
+			}
 
 		}
 

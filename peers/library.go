@@ -18,12 +18,20 @@ type Peer struct {
 	Distance time.Duration
 }
 
+// Clone returns a clone of the peer
+func (peer *Peer) Clone() *Peer {
+	return &Peer{
+		Peer:     peer.Peer.Clone(),
+		Distance: peer.Distance,
+	}
+}
+
 // Library is a library of all known peers
 type Library interface {
 	// Get a peer by it's public key
-	GetByPublicKey(...[]byte) []*peerspb.Peer
+	GetByPublicKey(...[]byte) []*Peer
 	// Get a peer by address
-	GetByAddress(...string) []*peerspb.Peer
+	GetByAddress(...string) []*Peer
 	// List all peers including local
 	List() []*Peer
 	// List in ascending order of distance
@@ -37,7 +45,7 @@ type Library interface {
 	// Return the local peer
 	Local() *Peer
 	// Mark the peer as being offline
-	Offline(addr string) (*peerspb.Peer, bool)
+	Offline(addr string) (*Peer, bool)
 	// Returns number of peers in the library including local
 	Count() int
 }
@@ -143,7 +151,8 @@ func (pl *InmemLibrary) Update(peers ...*peerspb.Peer) int {
 	return c
 }
 
-// computeDistance computes the distance to each peer
+// computeDistance computes the distance from local to each peer in terms
+// of time
 func (pl *InmemLibrary) computeDistance() {
 	local := pl.m[0].Coordinate
 	if local == nil {
@@ -158,7 +167,7 @@ func (pl *InmemLibrary) computeDistance() {
 }
 
 // Offline sets the peer by the given address as offline
-func (pl *InmemLibrary) Offline(addr string) (*peerspb.Peer, bool) {
+func (pl *InmemLibrary) Offline(addr string) (*Peer, bool) {
 	for i, p := range pl.m {
 		if p.Address() == addr {
 			pl.m[i].Offline = true
@@ -185,8 +194,8 @@ func (pl *InmemLibrary) List() []*Peer {
 // public key is not found the slot in the list will be empty as such the return
 // will always be of the same length as the input.  If no public keys are
 // provided all nodes are returned.
-func (pl *InmemLibrary) GetByPublicKey(pks ...[]byte) []*peerspb.Peer {
-	out := make([]*peerspb.Peer, len(pks))
+func (pl *InmemLibrary) GetByPublicKey(pks ...[]byte) []*Peer {
+	out := make([]*Peer, len(pks))
 
 	pl.mu.RLock()
 
@@ -203,8 +212,8 @@ func (pl *InmemLibrary) GetByPublicKey(pks ...[]byte) []*peerspb.Peer {
 
 // GetByAddress returns a list of peers by address.  The logic is the same as
 // GetByPublicKey
-func (pl *InmemLibrary) GetByAddress(addrs ...string) []*peerspb.Peer {
-	out := make([]*peerspb.Peer, len(addrs))
+func (pl *InmemLibrary) GetByAddress(addrs ...string) []*Peer {
+	out := make([]*Peer, len(addrs))
 
 	pl.mu.RLock()
 
@@ -286,7 +295,7 @@ func (pl *InmemLibrary) Restore(b []byte) error {
 	return nil
 }
 
-func (pl *InmemLibrary) getByPublicKey(pk []byte) (int, *peerspb.Peer, bool) {
+func (pl *InmemLibrary) getByPublicKey(pk []byte) (int, *Peer, bool) {
 
 	for i, p := range pl.m {
 		if bytes.Compare(p.PublicKey, pk) == 0 {
@@ -297,7 +306,7 @@ func (pl *InmemLibrary) getByPublicKey(pk []byte) (int, *peerspb.Peer, bool) {
 	return -1, nil, false
 }
 
-func (pl *InmemLibrary) getByAddr(addr string) (int, *peerspb.Peer, bool) {
+func (pl *InmemLibrary) getByAddr(addr string) (int, *Peer, bool) {
 
 	for i, p := range pl.m {
 		if p.Address() == addr {

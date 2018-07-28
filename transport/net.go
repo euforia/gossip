@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"encoding/binary"
 	"net"
 )
 
@@ -54,4 +55,19 @@ func (conn *defaultNoMuxConn) Read(p []byte) (int, error) {
 	// Read from connection
 	n, err := conn.Conn.Read(p[2:])
 	return n + 2, err
+}
+
+func DialMux(addr string, magic uint16) (net.Conn, error) {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	m := make([]byte, 2)
+	binary.BigEndian.PutUint16(m, magic)
+	_, err = conn.Write(m)
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+	return conn, nil
 }

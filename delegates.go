@@ -215,7 +215,7 @@ func (ged *eventsDelegate) NotifyLeave(node *memberlist.Node) {
 
 	if np, ok := ged.peers.Offline(peer.Address()); ok {
 		ged.log.Infof("Peer offlined name=%s address=%s", node.Name, peer.Address())
-		ged.child.NotifyLeave(np)
+		ged.child.NotifyLeave(np.Peer)
 	}
 }
 
@@ -276,11 +276,14 @@ func (del *pingDelegate) updateCoords(addr string, other vivaldi.Coordinate, rtt
 	}
 
 	// Get local and received peer to update coords
-	peers := del.peers.GetByAddress(del.host, addr)
+	softPeers := del.peers.GetByAddress(del.host, addr)
 
+	peers := make([]*peerspb.Peer, 2)
 	// Local
+	peers[0] = softPeers[0].Peer
 	peers[0].Coordinate = newLocalCoord
 	// Remote
+	peers[1] = softPeers[1].Peer
 	peers[1].Coordinate = remoteCoord
 
 	// Update library

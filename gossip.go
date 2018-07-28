@@ -89,9 +89,6 @@ func (g *Gossip) ListPools() []int32 {
 // RegisterPool registers ie. creates a new pool with the given config.  All pools must be
 // registered before gossip is started as the addition of pools is not thread safe
 func (g *Gossip) RegisterPool(pconf *PoolConfig) *Pool {
-	if pconf.ID < 1 {
-		panic("pool id must be greate than 0")
-	}
 
 	pconf.Vivaldi = g.coord
 	pconf.Memberlist.Transport = g.trans.RegisterPool(uint8(pconf.ID))

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/euforia/gossip/peers"
-	"github.com/euforia/gossip/peers/peerspb"
 )
 
 type httpServer struct {
@@ -61,7 +60,7 @@ func (server *httpServer) handleDistance(w http.ResponseWriter, r *http.Request)
 	w.Write([]byte(duration.String()))
 }
 
-func peerCount(peers []*peerspb.Peer) (c int) {
+func peerCount(peers []*peers.Peer) (c int) {
 	for i := range peers {
 		if peers[i] != nil {
 			c++
