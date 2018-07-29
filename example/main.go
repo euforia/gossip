@@ -65,7 +65,7 @@ func main() {
 
 	// Application http handler
 	hs := &httpServer{peers: pool1.Peers()}
-	if err = http.Serve(gsp.Listener(), hs); err != nil {
+	if err = http.Serve(gsp.ListenTCP(), hs); err != nil {
 		log.Fatal(err)
 	}
 

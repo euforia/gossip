@@ -109,7 +109,7 @@ func Test_Gossip(t *testing.T) {
 	poolMems[1].Broadcast([]byte("from node 1"))
 	<-time.After(1500 * time.Millisecond)
 
-	tconn := gnet[0].TCPConnections()
+	tconn := gnet[0].Listener()
 	assert.NotNil(t, tconn)
 	upkt := gnet[0].UDPPackets()
 	assert.NotNil(t, upkt)

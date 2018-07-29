@@ -26,8 +26,7 @@ const (
 )
 
 const (
-	transTCPMagic = 0xf0  // Magic number for memberlist TCP connection
-	transUDPMagic = 0x0f1 // Magic number for memberlist UDP connection
+	memlistMagic = 0xfe // Magic number for memberlist TCP connection
 )
 
 // Config is used to configure a net transport.
@@ -126,6 +125,14 @@ func (t *NetTransport) RegisterListener(id uint16) (<-chan net.Conn, error) {
 	if _, ok := t.muxed[id]; ok {
 		return nil, fmt.Errorf("listener id taken: %d", id)
 	}
+
+	// Check for memberlist magic
+	buf := make([]byte, 2)
+	binary.BigEndian.PutUint16(buf, id)
+	if buf[0] == memlistMagic {
+		return nil, fmt.Errorf("listener id taken: %d", id)
+	}
+
 	ch := make(chan net.Conn)
 	t.muxed[id] = ch
 	return ch, nil
@@ -313,7 +320,7 @@ func (t *NetTransport) tcpListen(tcpLn *net.TCPListener) {
 
 		switch magic[0] {
 
-		case transTCPMagic:
+		case memlistMagic:
 			pool, ok := t.pools[magic[1]]
 			if !ok {
 				t.logger.Printf("[ERR] Gossip pool not found: %d", magic[1])
@@ -365,7 +372,7 @@ func (t *NetTransport) udpListen(udpLn *net.UDPConn) {
 		}
 
 		switch buf[0] {
-		case transUDPMagic:
+		case memlistMagic:
 			pool, ok := t.pools[buf[1]]
 			if !ok {
 				t.logger.Printf("[ERR] Gossip pool not found: %d", buf[1])

@@ -86,8 +86,8 @@ func (g *Gossip) ListPools() []int32 {
 	return out
 }
 
-// RegisterPool registers ie. creates a new pool with the given config.  All pools must be
-// registered before gossip is started as the addition of pools is not thread safe
+// RegisterPool creates a new gossip pool with the given config.  All pools must be
+// registered before gossip is started as the addition of pools is not thread-safe
 func (g *Gossip) RegisterPool(pconf *PoolConfig) *Pool {
 
 	pconf.Vivaldi = g.coord
@@ -119,19 +119,26 @@ func (g *Gossip) Start() (err error) {
 	return
 }
 
-// Listener returns a TCP net.Listener interface that can be used to allow the user
-// to run other protocols
-func (g *Gossip) Listener() net.Listener {
+// ListenTCP returns a TCP Listener interface for native non-muxed protocols.  This
+// does not actually start listening but rather returns a Listener interface backed
+// by a channel of incoming connections
+func (g *Gossip) ListenTCP() net.Listener {
 	ch := g.trans.TCPCh()
 	ln, _ := transport.ListenTCP(g.advAddr, ch)
 	return ln
 }
 
-// TCPConnections returns a read-only channel of incoming non-gossip tcp
-// connections.  This is useful for custom application transport allowing
-// network communication on a single port
-func (g *Gossip) TCPConnections() <-chan net.Conn {
-	return g.trans.TCPCh()
+// Listen returns a new muxed listener by the given id.  The dialer must send the
+// same id at the time of connection.  It returns an error if the id is taken.  All
+// listeners must be registered before gossip is actually started as the addition
+// of listeners is not thread-safe
+func (g *Gossip) Listen(id uint16) (net.Listener, error) {
+	ch, err := g.trans.RegisterListener(id)
+	if err == nil {
+		return transport.ListenTCP(g.advAddr, ch)
+	}
+
+	return nil, err
 }
 
 // UDPPackets returns a read-only channel incoming non-gossip udp packets. This

@@ -3,6 +3,7 @@ package transport
 import (
 	"encoding/binary"
 	"net"
+	"time"
 )
 
 // MuxedListener is a muxed listener interface
@@ -57,17 +58,22 @@ func (conn *defaultNoMuxConn) Read(p []byte) (int, error) {
 	return n + 2, err
 }
 
-func DialMux(addr string, magic uint16) (net.Conn, error) {
-	conn, err := net.Dial("tcp", addr)
+// DialTimeout is dialer for muxed connections.  It takes a remote address, mux id and
+// connection timeout value
+func DialTimeout(addr string, magic uint16, timeout time.Duration) (net.Conn, error) {
+	conn, err := net.DialTimeout("tcp", addr, timeout)
 	if err != nil {
 		return nil, err
 	}
+
 	m := make([]byte, 2)
 	binary.BigEndian.PutUint16(m, magic)
+
 	_, err = conn.Write(m)
 	if err != nil {
 		conn.Close()
 		return nil, err
 	}
+
 	return conn, nil
 }
