@@ -219,6 +219,7 @@ func (ged *eventsDelegate) NotifyLeave(node *memberlist.Node) {
 	}
 }
 
+// May support child delegates to in the future
 type pingDelegate struct {
 	host  string
 	coord *vivaldi.Client

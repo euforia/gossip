@@ -2,6 +2,7 @@ package gossip
 
 import (
 	"net"
+	"strconv"
 
 	"github.com/hexablock/log"
 	"github.com/hexablock/vivaldi"
@@ -119,12 +120,16 @@ func (g *Gossip) Start() (err error) {
 	return
 }
 
+func (g *Gossip) host() string {
+	return g.advAddr + ":" + strconv.Itoa(g.advPort)
+}
+
 // ListenTCP returns a TCP Listener interface for native non-muxed protocols.  This
 // does not actually start listening but rather returns a Listener interface backed
 // by a channel of incoming connections
 func (g *Gossip) ListenTCP() net.Listener {
 	ch := g.trans.TCPCh()
-	ln, _ := transport.ListenTCP(g.advAddr, ch)
+	ln, _ := transport.ListenTCP(g.host(), ch)
 	return ln
 }
 
@@ -135,7 +140,7 @@ func (g *Gossip) ListenTCP() net.Listener {
 func (g *Gossip) Listen(id uint16) (net.Listener, error) {
 	ch, err := g.trans.RegisterListener(id)
 	if err == nil {
-		return transport.ListenTCP(g.advAddr, ch)
+		return transport.ListenTCP(g.host(), ch)
 	}
 
 	return nil, err
