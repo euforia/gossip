@@ -33,7 +33,7 @@ func testConf(host string, port int) *Config {
 	return conf
 }
 
-func testPoolConfig(id int) *PoolConfig {
+func testPoolConfig(id int32) *PoolConfig {
 	conf := DefaultPoolConfig(id)
 	conf.Memberlist = testMemlistConf()
 	return conf

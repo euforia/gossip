@@ -60,29 +60,29 @@ func DefaultConfig() *Config {
 }
 
 // DefaultPoolConfig returns a base config to init a new gossip pool
-func DefaultPoolConfig(id int) *PoolConfig {
+func DefaultPoolConfig(id int32) *PoolConfig {
 	return &PoolConfig{
-		ID:    int32(id),
+		ID:    id,
 		Peers: peers.NewInmemLibrary(),
 	}
 }
 
 // DefaultWANPoolConfig returns a sane config suitable for WAN based pool
-func DefaultWANPoolConfig(id int) *PoolConfig {
+func DefaultWANPoolConfig(id int32) *PoolConfig {
 	c := DefaultPoolConfig(id)
 	c.Memberlist = memberlist.DefaultWANConfig()
 	return c
 }
 
 // DefaultLANPoolConfig returns a sane config suitable for LAN based pool
-func DefaultLANPoolConfig(id int) *PoolConfig {
+func DefaultLANPoolConfig(id int32) *PoolConfig {
 	c := DefaultPoolConfig(id)
 	c.Memberlist = memberlist.DefaultLANConfig()
 	return c
 }
 
 // DefaultLocalPoolConfig returns a sane config suitable for local pool
-func DefaultLocalPoolConfig(id int) *PoolConfig {
+func DefaultLocalPoolConfig(id int32) *PoolConfig {
 	c := DefaultPoolConfig(id)
 	c.Memberlist = memberlist.DefaultLocalConfig()
 	return c
