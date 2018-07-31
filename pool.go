@@ -70,7 +70,7 @@ func (p *Pool) Peers() peers.Library {
 func (p *Pool) Start() (err error) {
 	p.Memberlist, err = memberlist.Create(p.mconf)
 	if err == nil {
-		p.log.Infof("Pool %d started!", p.id)
+		p.log.Infof("Started pool=%d", p.id)
 	}
 	return
 }
