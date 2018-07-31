@@ -2,23 +2,11 @@ package peers
 
 import "sort"
 
-func (lib *InmemLibrary) Len() int {
-	return len(lib.m)
-}
-
-func (lib *InmemLibrary) Less(i, j int) bool {
-	return lib.m[i].Distance < lib.m[j].Distance
-}
-
-func (lib *InmemLibrary) Swap(i, j int) {
-	lib.m[i], lib.m[j] = lib.m[j], lib.m[i]
-}
-
 // Closest returns all peers in ascending order of distance
 func (lib *InmemLibrary) Closest() []*Peer {
 	lib.mu.Lock()
 
-	sort.Sort(lib)
+	sort.Sort(ClosestPeers(lib.m))
 
 	out := make([]*Peer, len(lib.m))
 	copy(out, lib.m)
@@ -26,4 +14,19 @@ func (lib *InmemLibrary) Closest() []*Peer {
 	lib.mu.Unlock()
 
 	return out
+}
+
+// ClosestPeers allows to sort a set of peers by distance
+type ClosestPeers []*Peer
+
+func (peers ClosestPeers) Len() int {
+	return len(peers)
+}
+
+func (peers ClosestPeers) Less(i, j int) bool {
+	return peers[i].Distance < peers[j].Distance
+}
+
+func (peers ClosestPeers) Swap(i, j int) {
+	peers[i], peers[j] = peers[j], peers[i]
 }
