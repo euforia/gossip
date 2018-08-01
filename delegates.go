@@ -18,7 +18,7 @@ import (
 // Delegate is the overwritten memberlist delegate
 type Delegate interface {
 	NotifyMsg(msg []byte)
-	MergeRemoteState(buf []byte, join bool)
+	MergeRemoteState(remote *net.TCPAddr, buf []byte, join bool)
 	LocalState(join bool) []byte
 }
 
@@ -31,9 +31,9 @@ type EventsDelegate interface {
 
 type noopDelegate struct{}
 
-func (del *noopDelegate) NotifyMsg(msg []byte)                   {}
-func (del *noopDelegate) MergeRemoteState(buf []byte, join bool) {}
-func (del *noopDelegate) LocalState(join bool) []byte            { return nil }
+func (del *noopDelegate) NotifyMsg(msg []byte)                                        {}
+func (del *noopDelegate) MergeRemoteState(remote *net.TCPAddr, buf []byte, join bool) {}
+func (del *noopDelegate) LocalState(join bool) []byte                                 { return nil }
 
 type noopEventsDelegate struct{}
 
@@ -114,10 +114,10 @@ func (g *delegate) GetBroadcasts(overhead, limit int) [][]byte {
 
 func (g *delegate) MergeRemoteState(buf []byte, join bool) {
 	// 24 byte header
-	ip, port, poolID := g.parseStateHeader(buf[:24])
-	g.log.Debugf("State received pool=%d peer=%s:%d", poolID, ip.String(), port)
+	addr, poolID := g.parseStateHeader(buf[:24])
+	g.log.Debugf("State received pool=%d peer=%s", poolID, addr.String())
 
-	g.child.MergeRemoteState(buf[24:], join)
+	g.child.MergeRemoteState(addr, buf[24:], join)
 }
 
 // LocalState returns the local state. This is then sent to other peers made available
@@ -128,13 +128,13 @@ func (g *delegate) LocalState(join bool) []byte {
 	return append(header, user...)
 }
 
-func (g *delegate) parseStateHeader(header []byte) (net.IP, uint32, int32) {
+func (g *delegate) parseStateHeader(header []byte) (*net.TCPAddr, int32) {
 
 	ip := net.IP(header[:16])
 	port := binary.BigEndian.Uint32(header[16:20])
 	poolID := binary.BigEndian.Uint32(header[20:24])
 
-	return ip, port, int32(poolID)
+	return &net.TCPAddr{IP: ip, Port: int(port)}, int32(poolID)
 }
 
 func (g *delegate) getStateHeader() []byte {
