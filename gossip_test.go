@@ -106,23 +106,12 @@ func Test_Gossip(t *testing.T) {
 		poolMems[i] = g.GetPool(1)
 	}
 
-	// poolMems[1].Broadcast([]byte("from node 1"))
-	// <-time.After(1500 * time.Millisecond)
-
 	tconn := gnet[0].ListenTCP()
 	assert.NotNil(t, tconn)
 	upkt := gnet[0].UDPPackets()
 	assert.NotNil(t, upkt)
 
-	// local := poolMems[0].peers.Local()
-	// assert.NotNil(t, local.Coordinate)
-
 	<-time.After(2000 * time.Millisecond)
-
-	// peers := poolMems[0].peers.List()
-	// for _, p := range peers[1:] {
-	// 	t.Log(peers[0].Coordinate.DistanceTo(p.Coordinate))
-	// }
 
 	ln := gnet[1].ListenTCP()
 	hs := &testHTTPServer{}
