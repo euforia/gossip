@@ -5,7 +5,6 @@ import (
 	nlog "log"
 	"os"
 
-	"github.com/euforia/gossip/peers"
 	"github.com/hashicorp/memberlist"
 	"github.com/hexablock/log"
 	"github.com/hexablock/vivaldi"
@@ -13,14 +12,14 @@ import (
 
 // PoolConfig is the config for a single gossip pool
 type PoolConfig struct {
-	ID         int32
-	Peers      peers.Library
+	ID int32
+	// Peers      peers.Library
 	Vivaldi    *vivaldi.Client
 	Memberlist *memberlist.Config
-	Delegate   Delegate
-	Events     EventsDelegate
-	Logger     *log.Logger
-	Debug      bool
+	// Delegate   Delegate
+	// Events     EventsDelegate
+	Logger *log.Logger
+	Debug  bool
 }
 
 // Validate validates the pool config
@@ -62,8 +61,7 @@ func DefaultConfig() *Config {
 // DefaultPoolConfig returns a base config to init a new gossip pool
 func DefaultPoolConfig(id int32) *PoolConfig {
 	return &PoolConfig{
-		ID:    id,
-		Peers: peers.NewInmemLibrary(),
+		ID: id,
 	}
 }
 
