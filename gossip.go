@@ -57,6 +57,11 @@ func New(conf *Config) (*Gossip, error) {
 	return g, err
 }
 
+// NodeName returns the name of this node
+func (g *Gossip) NodeName() string {
+	return g.name
+}
+
 // GetPool returns a gossip pool by the given id.  It returns nil if the
 // pool id does not exist
 func (g *Gossip) GetPool(id int32) *Pool {

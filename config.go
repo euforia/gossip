@@ -9,22 +9,9 @@ import (
 	"github.com/hexablock/log"
 )
 
-// PoolConfig is the config for a single gossip pool
-type PoolConfig struct {
-	ID         int32
-	Memberlist *memberlist.Config
-	Logger     *log.Logger
-	Debug      bool
-}
-
-// Validate validates the pool config
-func (conf *PoolConfig) Validate() {
-	if conf.Debug {
-		conf.Memberlist.Logger = nlog.New(os.Stderr, "", nlog.LstdFlags|nlog.Lmicroseconds)
-	} else {
-		conf.Memberlist.Logger = nlog.New(ioutil.Discard, "", nlog.LstdFlags)
-	}
-}
+const (
+	defaultBroadcastBuffSize int = 32
+)
 
 // Config holds the config instantiate a Gossip instance
 type Config struct {
@@ -50,10 +37,33 @@ func DefaultConfig() *Config {
 	}
 }
 
+// PoolConfig is the config for a single gossip pool
+type PoolConfig struct {
+	ID                int32
+	BroadcastBuffSize int
+	Delegate          Delegate
+	Memberlist        *memberlist.Config
+	Logger            *log.Logger
+	Debug             bool
+}
+
+// Validate validates the pool config
+func (conf *PoolConfig) Validate() {
+	if conf.Debug {
+		conf.Memberlist.Logger = nlog.New(os.Stderr, "", nlog.LstdFlags|nlog.Lmicroseconds)
+	} else {
+		conf.Memberlist.Logger = nlog.New(ioutil.Discard, "", nlog.LstdFlags)
+	}
+	if conf.BroadcastBuffSize <= 0 {
+		conf.BroadcastBuffSize = defaultBroadcastBuffSize
+	}
+}
+
 // DefaultPoolConfig returns a base config to init a new gossip pool
 func DefaultPoolConfig(id int32) *PoolConfig {
 	return &PoolConfig{
-		ID: id,
+		ID:                id,
+		BroadcastBuffSize: defaultBroadcastBuffSize,
 	}
 }
 

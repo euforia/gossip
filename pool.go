@@ -10,6 +10,9 @@ type Pool struct {
 	// pool id
 	id int32
 
+	// overloaded delegate to provide a Broadcast api
+	del *broadcaster
+
 	// memberlist config
 	conf *memberlist.Config
 	// memberlist for pool
@@ -22,12 +25,21 @@ type Pool struct {
 func NewPool(conf *PoolConfig) *Pool {
 	conf.Validate()
 	p := &Pool{
-		id:   conf.ID,
+		id: conf.ID,
+		del: &broadcaster{
+			broadcast: make(chan []byte, conf.BroadcastBuffSize),
+			Delegate:  conf.Delegate,
+		},
 		conf: conf.Memberlist,
 		log:  conf.Logger,
 	}
 
 	return p
+}
+
+// Broadcast broadcasts the given bytes to the pool
+func (p *Pool) Broadcast(b []byte) {
+	p.del.broadcast <- b
 }
 
 // Start creates the underlying memberlist object
