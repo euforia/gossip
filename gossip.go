@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/hexablock/log"
-	"github.com/hexablock/vivaldi"
 
 	"github.com/euforia/gossip/transport"
 	"github.com/hashicorp/memberlist"
@@ -20,9 +19,6 @@ type Gossip struct {
 	advAddr string
 	// Adv port for state exchange
 	advPort int
-
-	// Vivaldi coordinate client
-	coord *vivaldi.Client
 
 	// All gossip pools
 	pools map[int32]*Pool
@@ -57,18 +53,8 @@ func New(conf *Config) (*Gossip, error) {
 	}
 
 	var err error
-
 	g.trans, err = transport.NewNetTransport(transConf)
-	if err != nil {
-		return nil, err
-	}
-
-	g.coord, err = vivaldi.NewClient(conf.Coordinate)
-	if err != nil {
-		return nil, err
-	}
-
-	return g, nil
+	return g, err
 }
 
 // GetPool returns a gossip pool by the given id.  It returns nil if the
@@ -89,20 +75,18 @@ func (g *Gossip) ListPools() []int32 {
 
 // RegisterPool creates a new gossip pool with the given config.  All pools must be
 // registered before gossip is started as the addition of pools is not thread-safe
-func (g *Gossip) RegisterPool(pconf *PoolConfig) *Pool {
+func (g *Gossip) RegisterPool(conf *PoolConfig) *Pool {
+	conf.Memberlist.Transport = g.trans.RegisterPool(uint8(conf.ID))
+	conf.Memberlist.Name = g.name
+	conf.Memberlist.BindAddr = g.advAddr
+	conf.Memberlist.BindPort = g.advPort
+	conf.Memberlist.AdvertiseAddr = g.advAddr
+	conf.Memberlist.AdvertisePort = g.advPort
+	conf.Logger = g.log
+	conf.Debug = g.debug
 
-	pconf.Vivaldi = g.coord
-	pconf.Memberlist.Transport = g.trans.RegisterPool(uint8(pconf.ID))
-	pconf.Memberlist.Name = g.name
-	pconf.Memberlist.BindAddr = g.advAddr
-	pconf.Memberlist.BindPort = g.advPort
-	pconf.Memberlist.AdvertiseAddr = g.advAddr
-	pconf.Memberlist.AdvertisePort = g.advPort
-	pconf.Logger = g.log
-	pconf.Debug = g.debug
-
-	p := NewPool(pconf)
-	g.pools[pconf.ID] = p
+	p := NewPool(conf)
+	g.pools[conf.ID] = p
 	return p
 }
 

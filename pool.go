@@ -10,9 +10,8 @@ type Pool struct {
 	// pool id
 	id int32
 
-	// pool config
+	// memberlist config
 	conf *memberlist.Config
-
 	// memberlist for pool
 	*memberlist.Memberlist
 

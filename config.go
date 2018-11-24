@@ -7,19 +7,14 @@ import (
 
 	"github.com/hashicorp/memberlist"
 	"github.com/hexablock/log"
-	"github.com/hexablock/vivaldi"
 )
 
 // PoolConfig is the config for a single gossip pool
 type PoolConfig struct {
-	ID int32
-	// Peers      peers.Library
-	Vivaldi    *vivaldi.Client
+	ID         int32
 	Memberlist *memberlist.Config
-	// Delegate   Delegate
-	// Events     EventsDelegate
-	Logger *log.Logger
-	Debug  bool
+	Logger     *log.Logger
+	Debug      bool
 }
 
 // Validate validates the pool config
@@ -38,10 +33,8 @@ type Config struct {
 	AdvertisePort int
 	BindAddr      string
 	BindPort      int
-	PublicKey     []byte // Public key for the node
-	Coordinate    *vivaldi.Config
 	Logger        *log.Logger
-	Debug         bool // Turn on debug
+	Debug         bool
 }
 
 // Validate validates thte config
@@ -52,9 +45,8 @@ func (conf *Config) Validate() {
 // DefaultConfig returns a default config to instantiate a Gossip instance
 func DefaultConfig() *Config {
 	return &Config{
-		BindAddr:   "0.0.0.0",
-		Coordinate: vivaldi.DefaultConfig(),
-		Logger:     log.NewDefaultLogger(),
+		BindAddr: "0.0.0.0",
+		Logger:   log.NewDefaultLogger(),
 	}
 }
 
