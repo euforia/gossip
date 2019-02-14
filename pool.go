@@ -24,6 +24,7 @@ type Pool struct {
 // NewPool returns a new gossip pool using the given config
 func NewPool(conf *PoolConfig) *Pool {
 	conf.Validate()
+
 	p := &Pool{
 		id: conf.ID,
 		del: &broadcaster{
@@ -33,6 +34,8 @@ func NewPool(conf *PoolConfig) *Pool {
 		conf: conf.Memberlist,
 		log:  conf.Logger,
 	}
+	// Override the delegate
+	p.conf.Delegate = p.del
 
 	return p
 }
