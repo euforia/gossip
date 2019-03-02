@@ -141,3 +141,10 @@ func (g *Gossip) Listen(id uint16) (net.Listener, error) {
 func (g *Gossip) UDPPackets() <-chan *memberlist.Packet {
 	return g.trans.UDPCh()
 }
+
+// Shutdown ...
+func (g *Gossip) Shutdown() error {
+	g.log.Infof("gossip shutting down")
+	return g.trans.Shutdown()
+	// return errors.New("to be implemented")
+}

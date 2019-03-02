@@ -125,4 +125,7 @@ func Test_Gossip(t *testing.T) {
 		t.Fatal("http request failed")
 	}
 
+	// for _, gn := range gnet {
+	// 	gn.Shutdown()
+	// }
 }

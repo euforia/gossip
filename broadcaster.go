@@ -13,6 +13,10 @@ type broadcaster struct {
 // The total byte size of the resulting data to send must not exceed
 // the limit. Care should be taken that this method does not block,
 // since doing so would block the entire UDP packet receive loop.
+//
+// This provides a wrapper to the native method to provide non-blocking
+// via channels.  It drains the complete channel and sends all of the
+// data
 func (bc *broadcaster) GetBroadcasts(overhead, limit int) [][]byte {
 	buffSize := len(bc.broadcast)
 	out := make([][]byte, buffSize)

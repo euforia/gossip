@@ -53,7 +53,8 @@ func (t *poolTransport) WriteTo(b []byte, addr string) (time.Time, error) {
 	// packet sending interface on the first one. Take the time after the
 	// write call comes back, which will underestimate the time a little,
 	// but help account for any delays before the write occurs.
-	_, err = t.net.udpListeners[0].WriteTo(append([]byte{memlistMagic, t.poolID}, b...), udpAddr)
+	data := append([]byte{memlistMagic, t.poolID}, b...)
+	_, err = t.net.udpListeners[0].WriteTo(data, udpAddr)
 	return time.Now(), err
 }
 
@@ -76,4 +77,10 @@ func (t *poolTransport) DialTimeout(addr string, timeout time.Duration) (net.Con
 // Shutdown satisfies memberlist.Transport. See Transport.
 func (t *poolTransport) Shutdown() error {
 	return nil
+}
+
+// this is called by the parent transport
+func (t *poolTransport) close() {
+	close(t.memlistCh)
+	close(t.packetCh)
 }

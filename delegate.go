@@ -30,3 +30,10 @@ type Delegate interface {
 	// boolean indicates this is for a join instead of a push/pull.
 	MergeRemoteState(buf []byte, join bool)
 }
+
+type nopDelegate struct{}
+
+func (del *nopDelegate) NodeMeta(limit int) []byte              { return nil }
+func (del *nopDelegate) NotifyMsg([]byte)                       {}
+func (del *nopDelegate) LocalState(join bool) []byte            { return nil }
+func (del *nopDelegate) MergeRemoteState(buf []byte, join bool) {}

@@ -57,6 +57,9 @@ func (conf *PoolConfig) Validate() {
 	if conf.BroadcastBuffSize <= 0 {
 		conf.BroadcastBuffSize = defaultBroadcastBuffSize
 	}
+	if conf.Delegate == nil {
+		conf.Delegate = &nopDelegate{}
+	}
 }
 
 // DefaultPoolConfig returns a base config to init a new gossip pool

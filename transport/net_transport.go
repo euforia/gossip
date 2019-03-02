@@ -2,6 +2,7 @@ package transport
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -48,7 +49,7 @@ type Config struct {
 type NetTransport struct {
 	config *Config
 
-	// Gossip pools
+	// Transport per gossip pools
 	pools map[uint8]*poolTransport
 
 	// Additional muxed conns
@@ -85,14 +86,6 @@ func NewNetTransport(config *Config) (*NetTransport, error) {
 		logger: config.Logger,
 	}
 
-	// Clean up listeners if there's an error.
-	// var ok bool
-	// defer func() {
-	// 	if !ok {
-	// 		t.Shutdown()
-	// 	}
-	// }()
-
 	err := t.initListeners(config)
 	if err != nil {
 		return nil, err
@@ -112,15 +105,15 @@ func (t *NetTransport) Start() {
 	}
 }
 
-// RegisterPool registers a new gossip pool returning the transport
-// for that pool
+// RegisterPool registers a new gossip pool returning a new pool
+// transport that implements memberlist.Transport
 func (t *NetTransport) RegisterPool(id uint8) memberlist.Transport {
 	ptrans := newPoolTransport(id, t)
 	t.pools[id] = ptrans
 	return ptrans
 }
 
-// RegisterListener registers a new listener to be muxed
+// RegisterListener registers a new muxed listener
 func (t *NetTransport) RegisterListener(id uint16) (<-chan net.Conn, error) {
 	if _, ok := t.muxed[id]; ok {
 		return nil, fmt.Errorf("listener id taken: %d", id)
@@ -278,19 +271,36 @@ func (t *NetTransport) UDPCh() <-chan *memberlist.Packet {
 
 // Shutdown satisfies memberlist.Transport. See Transport.
 func (t *NetTransport) Shutdown() error {
-	// This will avoid log spam about errors when we shut down.
-	atomic.StoreInt32(&t.shutdown, 1)
+	if swapped := atomic.CompareAndSwapInt32(&t.shutdown, 0, 1); !swapped {
+		return errors.New("transport already shutdown")
+	}
+	// atomic.StoreInt32(&t.shutdown, 1)
 
 	// Rip through all the connections and shut them down.
 	for _, conn := range t.tcpListeners {
-		conn.Close()
+		_ = conn.Close()
 	}
 	for _, conn := range t.udpListeners {
-		conn.Close()
+		_ = conn.Close()
 	}
 
 	// Block until all the listener threads have died.
 	t.wg.Wait()
+
+	// Close all muxed listeners
+	for _, v := range t.muxed {
+		close(v)
+	}
+
+	// Close non-muxed tcp and udp listener
+	close(t.tcpCh)
+	close(t.udpCh)
+
+	// Shutdown pool channels
+	for _, p := range t.pools {
+		p.close()
+	}
+
 	return nil
 }
 
@@ -356,10 +366,10 @@ func (t *NetTransport) tcpListen(tcpLn *net.TCPListener) {
 			mgc := binary.BigEndian.Uint16(magic)
 			if ch, ok := t.muxed[mgc]; ok {
 				ch <- conn
-			} else {
-				// No magic
-				t.tcpCh <- &defaultNoMuxConn{first2: magic, Conn: conn}
+				return
 			}
+			// No magic
+			t.tcpCh <- &defaultNoMuxConn{first2: magic, Conn: conn}
 
 		}
 
@@ -418,14 +428,6 @@ func (t *NetTransport) udpListen(udpLn *net.UDPConn) {
 			}
 
 		}
-
-		// // Ingest the packet.
-		// metrics.IncrCounter([]string{"memberlist", "udp", "received"}, float32(n))
-		// t.packetCh <- &memberlist.Packet{
-		// 	Buf:       buf[:n],
-		// 	From:      addr,
-		// 	Timestamp: ts,
-		// }
 	}
 }
 

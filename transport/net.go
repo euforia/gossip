@@ -2,6 +2,7 @@ package transport
 
 import (
 	"encoding/binary"
+	"errors"
 	"net"
 	"time"
 )
@@ -21,8 +22,10 @@ func ListenTCP(addr string, ch <-chan net.Conn) (*MuxedListener, error) {
 
 // Accept implements a muxed net.Listener
 func (ln *MuxedListener) Accept() (net.Conn, error) {
-	conn := <-ln.ch
-	return conn, nil
+	if conn, ok := <-ln.ch; ok {
+		return conn, nil
+	}
+	return nil, errors.New("listener closed")
 }
 
 // Close implements a muxed net.Listener
